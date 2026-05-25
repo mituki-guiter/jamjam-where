@@ -161,7 +161,6 @@ st.markdown(
 
 # -----------------------------
 # Spot data
-# category と tags を分けて、項目と店がズレないようにする
 # -----------------------------
 SPOTS = [
     {
@@ -172,7 +171,7 @@ SPOTS = [
         "max_budget": 4500,
         "min_hours": 2.0,
         "max_hours": 6.0,
-        "tags": ["ワイワイ系", "体を動かしたい", "運動系", "雨でも安心", "長居したい", "グループ向き"],
+        "tags": ["ワイワイ系", "体を動かしたい", "運動系", "雨でも安心", "長居したい", "グループ向き", "アクティブ"],
         "url": "https://www.round1.co.jp/shop/tenpo/aichi-tikusa.html",
         "points": [
             "ボウリング・ビリヤード・ダーツ・卓球など、体を動かせる遊びが多い",
@@ -189,7 +188,7 @@ SPOTS = [
         "max_budget": 4000,
         "min_hours": 1.5,
         "max_hours": 4.0,
-        "tags": ["ワイワイ系", "体を動かしたい", "運動系", "雨でも安心", "グループ向き"],
+        "tags": ["ワイワイ系", "体を動かしたい", "運動系", "雨でも安心", "グループ向き", "アクティブ"],
         "url": "https://www.grandbowl.jp/nagoya/",
         "points": [
             "ボウリングを中心に、グループ全員で同じ体験を共有しやすい",
@@ -206,8 +205,8 @@ SPOTS = [
         "max_budget": 1500,
         "min_hours": 1.0,
         "max_hours": 3.0,
-        "tags": ["体を動かしたい", "運動系", "コスパ重視", "健康的", "雨でも安心"],
-        "url": "https://www.nagoya-naka-sc.jp/",
+        "tags": ["体を動かしたい", "運動系", "コスパ重視", "健康的", "雨でも安心", "アクティブ"],
+        "url": "https://www.nespa.or.jp/facility/naka_sc/",
         "points": [
             "低予算で体を動かしやすく、学生でも利用しやすい",
             "伏見周辺から行きやすく、都心で運動したい時に使いやすい",
@@ -396,32 +395,26 @@ def map_url(place_name):
 def calculate_score(spot, area, category, budget, vibes, stay_hours):
     score = 0
 
-    # 1. 遊びジャンルを最優先
     if category != "おまかせ":
         if spot["category"] == category:
-            score += 220
+            score += 240
         else:
-            score -= 140
+            score -= 180
 
-    # 2. 運動系を選んだ場合は、運動スポットを強制的に優遇
     sports_words = {"体を動かしたい", "運動系", "アクティブ", "グループ向き"}
     wants_sports = any(v in sports_words for v in vibes)
 
     if wants_sports:
         if spot["category"] == "スポーツ・運動":
-            score += 180
+            score += 220
         else:
-            score -= 160
+            score -= 200
 
-    # 3. エリア
     if area == spot["area"]:
         score += 45
     elif area == "その他":
         score += 5
-    else:
-        score += 0
 
-    # 4. 予算
     if spot["min_budget"] <= budget <= spot["max_budget"]:
         score += 35
     elif budget < spot["min_budget"]:
@@ -429,11 +422,9 @@ def calculate_score(spot, area, category, budget, vibes, stay_hours):
     else:
         score += max(0, 18 - int((budget - spot["max_budget"]) / 350))
 
-    # 5. 雰囲気タグ
     matched = set(vibes) & set(spot["tags"])
     score += len(matched) * 14
 
-    # 6. 滞在時間
     if spot["min_hours"] <= stay_hours <= spot["max_hours"]:
         score += 25
     else:
@@ -459,8 +450,13 @@ def choose_spot(area, custom_area, category, budget, vibes, stay_hours):
     if not matched_vibes:
         matched_vibes = ["今回の条件"]
 
+    if category == "おまかせ":
+        category_reason = f"選ばれたジャンル：{best_spot['category']}として、今回の条件に最も合う"
+    else:
+        category_reason = f"遊びジャンル：{category}の希望に合う"
+
     reason_points = [
-        f"遊びジャンル：{category}の希望に合うスポットとして選定",
+        category_reason,
         f"予算感：1人あたり{budget:,}円前後で検討しやすい",
         f"滞在時間：{stay_hours:g}時間の予定に合わせやすい",
         f"雰囲気：{', '.join(matched_vibes)}という希望と相性が良い",
@@ -476,7 +472,7 @@ def choose_spot(area, custom_area, category, budget, vibes, stay_hours):
         f"【JAMJAM Whereからのおすすめ】\n"
         f"今回の行き先は「{best_spot['name']}」がおすすめです。\n\n"
         f"おすすめする理由\n"
-        f"・今回の遊びジャンル「{category}」に合っている\n"
+        f"・今回の条件に合う「{best_spot['category']}」の行き先として選ばれている\n"
         f"・予算{budget:,}円くらいで検討しやすい\n"
         f"・{stay_hours:g}時間くらいの予定に合わせやすい\n"
         f"・{', '.join(matched_vibes)}という雰囲気に合っている\n"
@@ -601,7 +597,7 @@ stay_hours = st.number_input(
 st.markdown("")
 
 # -----------------------------
-# Result
+# Decision button
 # -----------------------------
 if st.button("この場所で決める！"):
     if area == "その他" and not custom_area.strip():
@@ -621,63 +617,83 @@ if st.button("この場所で決める！"):
             stay_hours=stay_hours
         )
 
-        points_html = "".join(
-            [f"<li>{html.escape(point)}</li>" for point in reason_points]
-        )
+        st.session_state["jamjam_result"] = {
+            "best_spot": best_spot,
+            "summary": summary,
+            "reason_points": reason_points,
+            "share_text": share_text
+        }
 
-        st.markdown(
-            f"""
-            <div class="result-card">
-                <div class="result-label">JAMJAMが出した、たった1つの答え</div>
-                <div class="result-title">{html.escape(best_spot["name"])}</div>
-                <div class="reason-box">
-                    <b>JAMJAMがここに決めた理由</b><br>
-                    {html.escape(summary)}
-                    <ul class="point-list">
-                        {points_html}
-                    </ul>
-                    <div class="best-for">
-                        <b>特におすすめのグループ</b><br>
-                        {html.escape(best_spot["best_for"])}
-                    </div>
+# -----------------------------
+# Result display
+# -----------------------------
+if "jamjam_result" in st.session_state:
+    result = st.session_state["jamjam_result"]
+
+    best_spot = result["best_spot"]
+    summary = result["summary"]
+    reason_points = result["reason_points"]
+    share_text = result["share_text"]
+
+    points_html = "".join(
+        [f"<li>{html.escape(point)}</li>" for point in reason_points]
+    )
+
+    st.markdown(
+        f"""
+        <div class="result-card">
+            <div class="result-label">JAMJAMが出した、たった1つの答え</div>
+            <div class="result-title">{html.escape(best_spot["name"])}</div>
+            <div class="reason-box">
+                <b>JAMJAMがここに決めた理由</b><br>
+                {html.escape(summary)}
+                <ul class="point-list">
+                    {points_html}
+                </ul>
+                <div class="best-for">
+                    <b>特におすすめのグループ</b><br>
+                    {html.escape(best_spot["best_for"])}
                 </div>
             </div>
-            """,
-            unsafe_allow_html=True
-        )
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-        st.markdown("### 詳細を見る")
-        col1, col2 = st.columns(2)
+    st.markdown("### 詳細を見る")
+    col1, col2 = st.columns(2)
 
-        with col1:
-            st.link_button("公式サイトを見る", best_spot["url"], use_container_width=True)
+    with col1:
+        st.link_button("公式サイトを見る", best_spot["url"], use_container_width=True)
 
-        with col2:
-            st.link_button("Googleマップで見る", map_url(best_spot["name"]), use_container_width=True)
+    with col2:
+        st.link_button("Googleマップで見る", map_url(best_spot["name"]), use_container_width=True)
 
-st.markdown("### グループに送る文章")
+    st.markdown("### グループに送る文章")
 
-st.text_area(
-    "LINEやInstagramのグループに送れる文章です",
-    value=share_text,
-    height=230
-)
+    st.text_area(
+        "LINEやInstagramのグループに送れる文章です",
+        value=share_text,
+        height=230,
+        key="share_text_area"
+    )
 
-st_copy_button(
-    text=share_text,
-    before_copy_label="📋 グループ共有文をコピー",
-    after_copy_label="✅ コピーしました",
-    show_text=False
-)
+    st_copy_button(
+        text=share_text,
+        before_copy_label="📋 グループ共有文をコピー",
+        after_copy_label="✅ コピーしました",
+        show_text=False,
+        key="copy_share_text"
+    )
 
-st.markdown(
-    """
-    <div class="small-note">
-        ※これはビジネスコンテスト用MVPです。実際のサービスでは、口コミ・距離・混雑・予約可否・クーポンなども加味して精度を高めます。
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+    st.markdown(
+        """
+        <div class="small-note">
+            ※これはビジネスコンテスト用MVPです。実際のサービスでは、口コミ・距離・混雑・予約可否・クーポンなども加味して精度を高めます。
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 else:
     st.markdown(
