@@ -2,6 +2,7 @@ import time
 import html
 import urllib.parse
 import streamlit as st
+from st_copy_button import st_copy_button
 
 st.set_page_config(
     page_title="JAMJAM Where",
@@ -654,22 +655,29 @@ if st.button("この場所で決める！"):
         with col2:
             st.link_button("Googleマップで見る", map_url(best_spot["name"]), use_container_width=True)
 
-        st.markdown("### グループに送る文章")
-        st.text_area(
-            "下の文章を選択してコピーし、LINEやInstagramのグループに送れます",
-            value=share_text,
-            height=230
-        )
+st.markdown("### グループに送る文章")
 
-        st.markdown(
-            """
-            <div class="small-note">
-                ※コピーアイコンや独自JavaScriptは使わず、安定性を優先しています。文章欄を選択してコピーしてください。<br>
-                ※これはビジネスコンテスト用MVPです。実際のサービスでは、口コミ・距離・混雑・予約可否・クーポンなども加味して精度を高めます。
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+st.text_area(
+    "LINEやInstagramのグループに送れる文章です",
+    value=share_text,
+    height=230
+)
+
+st_copy_button(
+    text=share_text,
+    before_copy_label="📋 グループ共有文をコピー",
+    after_copy_label="✅ コピーしました",
+    show_text=False
+)
+
+st.markdown(
+    """
+    <div class="small-note">
+        ※これはビジネスコンテスト用MVPです。実際のサービスでは、口コミ・距離・混雑・予約可否・クーポンなども加味して精度を高めます。
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 else:
     st.markdown(
