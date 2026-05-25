@@ -1,9 +1,7 @@
 import time
 import html
-import json
 import urllib.parse
 import streamlit as st
-import streamlit.components.v1 as components
 
 st.set_page_config(
     page_title="JAMJAM Where",
@@ -135,12 +133,6 @@ st.markdown(
         color: white;
     }
 
-    div[data-testid="stTextArea"] textarea {
-        border-radius: 18px;
-        font-size: 0.95rem;
-        line-height: 1.65;
-    }
-
     @media (max-width: 640px) {
         .hero-title {
             font-size: 1.75rem;
@@ -238,7 +230,7 @@ SPOTS = [
         "max_hours": 2.5,
         "url": "https://www.nagoya-tv-tower.co.jp/",
         "points": [
-            "栄の中心にあり、集合場所としても分かりやすい",
+            "栄の中心にあり、集合場所として分かりやすい",
             "景色や写真映えを楽しめるため、普段の外食とは違う体験になる",
             "周辺に飲食店や商業施設が多く、次の予定にもつなげやすい"
         ],
@@ -326,19 +318,51 @@ SPOTS = [
     },
     {
         "name": "ラウンドワン 千種店",
-        "area": "大学周辺",
+        "area": "千種",
         "min_budget": 1500,
         "max_budget": 4500,
-        "tags": ["ワイワイ系", "体験重視", "雨でも安心", "長居したい", "グループ向き"],
+        "tags": ["ワイワイ系", "体を動かしたい", "運動系", "雨でも安心", "長居したい", "グループ向き"],
         "min_hours": 2.0,
         "max_hours": 6.0,
-        "url": "https://www.round1.co.jp/shop/",
+        "url": "https://www.round1.co.jp/shop/tenpo/aichi-tikusa.html",
         "points": [
-            "ボウリング・カラオケ・ゲームなど、グループで盛り上がりやすい要素が多い",
+            "ボウリング・ビリヤード・ダーツ・卓球など、グループで盛り上がりやすい遊びがある",
             "屋内施設なので天候に左右されにくい",
-            "遊び方をその場で変えやすく、好みが分かれるグループでも使いやすい"
+            "会話だけでなく実際に体を動かせるため、初対面や距離感のあるグループでも使いやすい"
         ],
-        "best_for": "みんなでワイワイ遊びたい大学生グループ"
+        "best_for": "体を動かしながら、みんなでワイワイ遊びたいグループ"
+    },
+    {
+        "name": "名古屋グランドボウル",
+        "area": "南大高",
+        "min_budget": 1500,
+        "max_budget": 4000,
+        "tags": ["ワイワイ系", "体を動かしたい", "運動系", "グループ向き", "雨でも安心"],
+        "min_hours": 1.5,
+        "max_hours": 4.0,
+        "url": "https://www.grandbowl.jp/nagoya/",
+        "points": [
+            "ボウリングを中心に、グループ全員で同じ体験を共有しやすい",
+            "勝負やチーム分けができるため、自然に盛り上がりやすい",
+            "飲食だけでは物足りない時に、遊びとしての満足感を作りやすい"
+        ],
+        "best_for": "ご飯だけでなく、体を動かす遊びを入れたいグループ"
+    },
+    {
+        "name": "中スポーツセンター",
+        "area": "伏見",
+        "min_budget": 300,
+        "max_budget": 1500,
+        "tags": ["体を動かしたい", "運動系", "コスパ重視", "落ち着いた系", "健康的"],
+        "min_hours": 1.0,
+        "max_hours": 3.0,
+        "url": "https://www.nespa.or.jp/facility/naka_sc/",
+        "points": [
+            "低予算で体を動かしやすく、学生でも利用しやすい",
+            "伏見駅周辺から行きやすく、都心で運動したい時に使いやすい",
+            "普通の外食やカフェとは違う、健康的な遊びとして提案できる"
+        ],
+        "best_for": "安く体を動かしたい、健康的な遊びをしたいグループ"
     }
 ]
 
@@ -400,7 +424,7 @@ def choose_spot(area, custom_area, budget, vibes, stay_hours):
     )
 
     reason_points = [
-        f"集合場所・移動のしやすさ：{display_area}周辺の条件と相性が良い",
+        f"集合場所・移動のしやすさ：{display_area}周辺の条件をもとに選定",
         f"予算感：1人あたり{budget:,}円前後の条件で検討しやすい",
         f"雰囲気：{', '.join(matched_vibes)}という希望に合いやすい",
     ] + best_spot["points"]
@@ -409,7 +433,7 @@ def choose_spot(area, custom_area, budget, vibes, stay_hours):
         f"【JAMJAM Whereからのおすすめ】\n"
         f"今回の行き先は「{best_spot['name']}」がおすすめです。\n\n"
         f"おすすめする理由\n"
-        f"・集合場所や移動の条件に合いやすい\n"
+        f"・集合場所や移動の条件をもとに選ばれている\n"
         f"・予算{budget:,}円くらいで検討しやすい\n"
         f"・{', '.join(matched_vibes)}という今回の雰囲気に合っている\n"
         f"・{best_spot['best_for']}\n\n"
@@ -452,7 +476,19 @@ st.subheader("今日の条件を入力")
 
 area = st.selectbox(
     "集合場所",
-    ["名古屋駅", "栄", "大須", "金山", "伏見", "名古屋港", "東山公園", "大学周辺", "その他"],
+    [
+        "名古屋駅",
+        "栄",
+        "大須",
+        "金山",
+        "伏見",
+        "名古屋港",
+        "東山公園",
+        "千種",
+        "南大高",
+        "大学周辺",
+        "その他"
+    ],
     index=0
 )
 
@@ -483,11 +519,15 @@ vibes = st.multiselect(
         "長居したい",
         "非日常感",
         "体験重視",
+        "体を動かしたい",
+        "運動系",
+        "グループ向き",
         "名古屋めし",
         "食事重視",
         "夜向き",
         "昼向き",
-        "デート"
+        "デート",
+        "健康的"
     ],
     default=["ワイワイ系", "コスパ重視"]
 )
@@ -563,42 +603,8 @@ if st.button("この場所で決める！"):
             label_visibility="collapsed"
         )
 
-        safe_line_text = json.dumps(line_text, ensure_ascii=False)
-
-        components.html(
-            f"""
-            <div style="margin-top: -4px;">
-                <button
-                    onclick='navigator.clipboard.writeText({safe_line_text}).then(() => {{
-                        const msg = document.getElementById("copy-message");
-                        msg.innerText = "コピーしました！そのままグループに送れます。";
-                    }})'
-                    style="
-                        width: 100%;
-                        border: none;
-                        border-radius: 999px;
-                        padding: 13px 18px;
-                        font-size: 15px;
-                        font-weight: 800;
-                        cursor: pointer;
-                        background: linear-gradient(135deg, #22c55e 0%, #14b8a6 100%);
-                        color: white;
-                        box-shadow: 0 10px 22px rgba(20, 184, 166, 0.22);
-                    "
-                >
-                    グループ送信用の文章をコピー
-                </button>
-                <div id="copy-message" style="
-                    margin-top: 8px;
-                    text-align: center;
-                    color: #047857;
-                    font-size: 13px;
-                    font-family: sans-serif;
-                "></div>
-            </div>
-            """,
-            height=72
-        )
+        st.caption("上の文章を選択してコピーできます。下のコード表示は右上のコピーアイコンからコピーできます。")
+        st.code(line_text, language="text")
 
         st.markdown(
             """
