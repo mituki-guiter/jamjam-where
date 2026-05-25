@@ -1,6 +1,9 @@
 import time
 import html
+import json
+import urllib.parse
 import streamlit as st
+import streamlit.components.v1 as components
 
 st.set_page_config(
     page_title="JAMJAM Where",
@@ -91,14 +94,20 @@ st.markdown(
         margin-top: 0.8rem;
     }
 
-    .share-box {
-        padding: 1rem;
-        border-radius: 18px;
-        background: #ecfdf5;
-        border: 1px solid #a7f3d0;
-        color: #065f46;
-        line-height: 1.7;
+    .point-list {
         margin-top: 0.8rem;
+        padding-left: 1.2rem;
+        line-height: 1.8;
+    }
+
+    .best-for {
+        margin-top: 1rem;
+        padding: 0.8rem;
+        border-radius: 14px;
+        background: #fff7ed;
+        border: 1px solid #fed7aa;
+        color: #9a3412;
+        line-height: 1.65;
     }
 
     .small-note {
@@ -156,84 +165,180 @@ st.markdown(
 # -----------------------------
 SPOTS = [
     {
-        "name": "大須商店街 食べ歩き＆古着めぐり",
+        "name": "大須商店街",
         "area": "大須",
         "min_budget": 800,
         "max_budget": 3000,
-        "tags": ["ワイワイ系", "映え重視", "コスパ重視", "歩き回りたい"],
+        "tags": ["ワイワイ系", "映え重視", "コスパ重視", "歩き回りたい", "食べ歩き"],
         "min_hours": 1.5,
         "max_hours": 5.0,
-        "description": "食べ歩き、古着、雑貨、ゲームセンターなどをまとめて楽しめるため、グループでも会話が続きやすい遊び先です。"
+        "url": "https://osu.nagoya/",
+        "points": [
+            "食べ歩き・古着・雑貨・ゲームセンターなど、遊び方をその場で変えやすい",
+            "予算が低めでも楽しみやすく、大学生グループと相性が良い",
+            "1つの店に絞りにくい時でも、エリア全体で楽しめるため失敗しにくい"
+        ],
+        "best_for": "予定を細かく決めすぎず、ワイワイ歩きながら楽しみたいグループ"
     },
     {
-        "name": "栄・オアシス21周辺 カフェ＆夜景さんぽ",
+        "name": "コンパル 大須本店",
+        "area": "大須",
+        "min_budget": 1000,
+        "max_budget": 2500,
+        "tags": ["落ち着いた系", "会話重視", "名古屋めし", "雨でも安心", "コスパ重視"],
+        "min_hours": 1.0,
+        "max_hours": 2.5,
+        "url": "https://www.konparu.co.jp/shop/",
+        "points": [
+            "名古屋らしい喫茶店体験ができ、県外の友人にも紹介しやすい",
+            "会話しながら過ごしやすく、短時間の外食・カフェ利用に向いている",
+            "大須散策と組み合わせやすく、遊びの前後にも使いやすい"
+        ],
+        "best_for": "落ち着いて話したいけど、名古屋らしさも少し入れたいグループ"
+    },
+    {
+        "name": "矢場とん 矢場町本店",
+        "area": "大須",
+        "min_budget": 1800,
+        "max_budget": 3500,
+        "tags": ["ワイワイ系", "名古屋めし", "食事重視", "定番", "観光感"],
+        "min_hours": 1.0,
+        "max_hours": 2.5,
+        "url": "https://www.yabaton.com/",
+        "points": [
+            "名古屋名物として知名度が高く、初めて行くメンバーにも説明しやすい",
+            "食事メインで予定を決めたい時に、目的がはっきりしていて迷いにくい",
+            "大須・栄方面の遊びと組み合わせやすい"
+        ],
+        "best_for": "名古屋らしいご飯を中心に、分かりやすく行き先を決めたいグループ"
+    },
+    {
+        "name": "オアシス21",
+        "area": "栄",
+        "min_budget": 0,
+        "max_budget": 2500,
+        "tags": ["映え重視", "駅近", "夜向き", "散歩", "コスパ重視", "会話重視"],
+        "min_hours": 0.5,
+        "max_hours": 2.5,
+        "url": "https://www.sakaepark.co.jp/",
+        "points": [
+            "栄駅周辺で集合しやすく、短時間でも立ち寄りやすい",
+            "写真を撮る・散歩する・周辺でご飯に行くなど、次の行動につなげやすい",
+            "予算を抑えたい時でも使いやすく、軽い遊びに向いている"
+        ],
+        "best_for": "お金をかけすぎず、栄周辺で軽く遊びたいグループ"
+    },
+    {
+        "name": "中部電力 MIRAI TOWER",
         "area": "栄",
         "min_budget": 1000,
-        "max_budget": 3500,
-        "tags": ["落ち着いた系", "映え重視", "会話重視", "駅近"],
+        "max_budget": 2500,
+        "tags": ["映え重視", "夜向き", "非日常感", "駅近", "デート"],
         "min_hours": 1.0,
-        "max_hours": 4.0,
-        "description": "アクセスが良く、カフェ・ショッピング・夜景を組み合わせやすいため、初めて行くメンバーでも外しにくい場所です。"
+        "max_hours": 2.5,
+        "url": "https://www.nagoya-tv-tower.co.jp/",
+        "points": [
+            "栄の中心にあり、集合場所としても分かりやすい",
+            "景色や写真映えを楽しめるため、普段の外食とは違う体験になる",
+            "周辺に飲食店や商業施設が多く、次の予定にもつなげやすい"
+        ],
+        "best_for": "栄で少し特別感のある遊びをしたいグループ"
     },
     {
-        "name": "名古屋駅周辺 カフェ＆地下街ぶらり",
+        "name": "名古屋市科学館",
+        "area": "伏見",
+        "min_budget": 400,
+        "max_budget": 1500,
+        "tags": ["落ち着いた系", "体験重視", "雨でも安心", "コスパ重視", "知的"],
+        "min_hours": 1.5,
+        "max_hours": 4.0,
+        "url": "https://www.ncsm.city.nagoya.jp/",
+        "points": [
+            "屋内施設なので天候に左右されにくい",
+            "展示やプラネタリウムなど、会話のきっかけになる要素が多い",
+            "比較的低予算で、普通の外食とは違う体験ができる"
+        ],
+        "best_for": "雨の日や、ただのご飯以外の遊びを探しているグループ"
+    },
+    {
+        "name": "ミッドランドスクエア シネマ",
         "area": "名古屋駅",
-        "min_budget": 1200,
-        "max_budget": 4000,
-        "tags": ["駅近", "落ち着いた系", "会話重視", "雨でも安心"],
-        "min_hours": 1.0,
-        "max_hours": 4.0,
-        "description": "集合しやすく、天気に左右されにくい地下街やカフェが多いため、予定が固まりきっていない日にも使いやすい選択です。"
+        "min_budget": 2000,
+        "max_budget": 4500,
+        "tags": ["落ち着いた系", "雨でも安心", "映画", "会話重視", "駅近"],
+        "min_hours": 2.5,
+        "max_hours": 5.0,
+        "url": "https://www.midland-sq-cinema.jp/",
+        "points": [
+            "名古屋駅周辺で集合しやすく、雨の日でも予定を立てやすい",
+            "映画の後に感想を話せるため、会話の流れが自然に生まれる",
+            "遊びの目的がはっきりするので、グループ内で合意を取りやすい"
+        ],
+        "best_for": "名駅集合で、落ち着いた遊びをしたいグループ"
     },
     {
-        "name": "金山駅周辺 ごはん＆ゆったり二次会",
-        "area": "金山",
+        "name": "名古屋港水族館",
+        "area": "名古屋港",
+        "min_budget": 2000,
+        "max_budget": 4500,
+        "tags": ["映え重視", "非日常感", "体験重視", "デート", "落ち着いた系"],
+        "min_hours": 2.0,
+        "max_hours": 5.0,
+        "url": "https://nagoyaaqua.jp/",
+        "points": [
+            "水族館という非日常感があり、普段の外食とは違う体験になる",
+            "展示を見る流れがあるため、会話が途切れにくい",
+            "デート・友人グループのどちらにも使いやすい"
+        ],
+        "best_for": "少し特別感のある遊びにしたいグループ"
+    },
+    {
+        "name": "東山動植物園",
+        "area": "東山公園",
+        "min_budget": 500,
+        "max_budget": 2500,
+        "tags": ["コスパ重視", "歩き回りたい", "体験重視", "昼向き", "落ち着いた系"],
+        "min_hours": 2.0,
+        "max_hours": 5.0,
+        "url": "https://www.higashiyama.city.nagoya.jp/",
+        "points": [
+            "低予算で長時間楽しみやすく、大学生にも使いやすい",
+            "動物園・植物園を歩きながら過ごせるため、自然に会話が生まれやすい",
+            "昼の予定として組みやすく、カフェやご飯にもつなげやすい"
+        ],
+        "best_for": "昼からゆっくり遊びたい、コスパ重視のグループ"
+    },
+    {
+        "name": "山本屋本店 栄本町通店",
+        "area": "栄",
+        "min_budget": 1500,
+        "max_budget": 3500,
+        "tags": ["落ち着いた系", "名古屋めし", "食事重視", "会話重視", "雨でも安心"],
+        "min_hours": 1.0,
+        "max_hours": 2.5,
+        "url": "https://yamamotoyahonten.co.jp/",
+        "points": [
+            "名古屋めしとして分かりやすく、県外の友人にも提案しやすい",
+            "食事を中心に予定を決めたい時に、目的が明確になる",
+            "栄周辺の予定と組み合わせやすい"
+        ],
+        "best_for": "落ち着いて名古屋らしい食事をしたいグループ"
+    },
+    {
+        "name": "ラウンドワン 千種店",
+        "area": "大学周辺",
         "min_budget": 1500,
         "max_budget": 4500,
-        "tags": ["ワイワイ系", "駅近", "会話重視", "夜向き"],
-        "min_hours": 2.0,
-        "max_hours": 5.0,
-        "description": "複数路線から集まりやすく、ごはん後の二次会にも移りやすいため、グループでの予定に向いています。"
-    },
-    {
-        "name": "大学周辺 カラオケ＆ファミレス作戦",
-        "area": "大学周辺",
-        "min_budget": 1000,
-        "max_budget": 3000,
-        "tags": ["ワイワイ系", "コスパ重視", "長居したい", "近場"],
+        "tags": ["ワイワイ系", "体験重視", "雨でも安心", "長居したい", "グループ向き"],
         "min_hours": 2.0,
         "max_hours": 6.0,
-        "description": "移動コストを抑えつつ、カラオケやファミレスで長く過ごせるため、急に決まった遊びにも対応しやすいプランです。"
-    },
-    {
-        "name": "ボウリング＆ゲームセンターで軽く勝負",
-        "area": "名古屋駅",
-        "min_budget": 1500,
-        "max_budget": 4000,
-        "tags": ["ワイワイ系", "体験重視", "雨でも安心", "グループ向き"],
-        "min_hours": 1.5,
-        "max_hours": 4.0,
-        "description": "会話だけでなく一緒に遊ぶ体験があるため、まだ距離感のあるメンバー同士でも盛り上がりやすい選択です。"
-    },
-    {
-        "name": "映画館＋カフェで感想会プラン",
-        "area": "栄",
-        "min_budget": 2200,
-        "max_budget": 5000,
-        "tags": ["落ち着いた系", "会話重視", "雨でも安心", "非日常感"],
-        "min_hours": 3.0,
-        "max_hours": 6.0,
-        "description": "映画を見たあとにカフェで感想を話せるため、話題に困りにくく、落ち着いた遊びに向いています。"
-    },
-    {
-        "name": "大須カフェ巡り＆写真スポット散歩",
-        "area": "大須",
-        "min_budget": 1200,
-        "max_budget": 3500,
-        "tags": ["映え重視", "落ち着いた系", "歩き回りたい", "コスパ重視"],
-        "min_hours": 2.0,
-        "max_hours": 5.0,
-        "description": "カフェ、雑貨、写真スポットをゆるく回れるため、予定を詰めすぎずに楽しみたい日に合っています。"
+        "url": "https://www.round1.co.jp/shop/",
+        "points": [
+            "ボウリング・カラオケ・ゲームなど、グループで盛り上がりやすい要素が多い",
+            "屋内施設なので天候に左右されにくい",
+            "遊び方をその場で変えやすく、好みが分かれるグループでも使いやすい"
+        ],
+        "best_for": "みんなでワイワイ遊びたい大学生グループ"
     }
 ]
 
@@ -261,9 +366,15 @@ def calculate_score(spot, area, budget, vibes, stay_hours):
     if spot["min_hours"] <= stay_hours <= spot["max_hours"]:
         score += 18
     else:
-        score += max(0, 10 - int(abs(stay_hours - ((spot["min_hours"] + spot["max_hours"]) / 2)) * 3))
+        center_hours = (spot["min_hours"] + spot["max_hours"]) / 2
+        score += max(0, 10 - int(abs(stay_hours - center_hours) * 3))
 
     return score
+
+
+def make_map_url(place_name):
+    query = urllib.parse.quote(place_name + " 名古屋")
+    return f"https://www.google.com/maps/search/?api=1&query={query}"
 
 
 def choose_spot(area, custom_area, budget, vibes, stay_hours):
@@ -278,26 +389,34 @@ def choose_spot(area, custom_area, budget, vibes, stay_hours):
 
     display_area = custom_area if area == "その他" and custom_area else area
 
-    matched_vibes = list(set(vibes) & set(best_spot["tags"]))
+    matched_vibes = [tag for tag in vibes if tag in best_spot["tags"]]
     if not matched_vibes:
         matched_vibes = vibes[:2] if vibes else ["今日の条件"]
 
-    reason = (
-        f"今回は「{display_area}周辺」「予算{budget:,}円くらい」「滞在時間{stay_hours:g}時間」"
-        f"という条件に加えて、{', '.join(matched_vibes)}という雰囲気が重視されていました。"
-        f"{best_spot['name']}は、条件に対して移動・予算・過ごしやすさのバランスが良く、"
-        f"グループ内で説明しやすい理由もあるため、JAMJAMはこの1つに決めました。"
-        f"{best_spot['description']}"
+    decision_summary = (
+        f"今回の条件は「{display_area}周辺」「予算{budget:,}円くらい」"
+        f"「滞在時間{stay_hours:g}時間」「{', '.join(vibes)}」。"
+        f"この条件に対して、JAMJAMは「{best_spot['name']}」を最も相性が良い行き先として選びました。"
     )
+
+    reason_points = [
+        f"集合場所・移動のしやすさ：{display_area}周辺の条件と相性が良い",
+        f"予算感：1人あたり{budget:,}円前後の条件で検討しやすい",
+        f"雰囲気：{', '.join(matched_vibes)}という希望に合いやすい",
+    ] + best_spot["points"]
 
     line_text = (
-        f"今日の行き先、JAMJAMで見たら「{best_spot['name']}」が一番合ってそう！\n\n"
-        f"理由は、{display_area}周辺で集まりやすくて、予算{budget:,}円くらいに収まりやすいのと、"
-        f"{', '.join(matched_vibes)}っていう今日の雰囲気に合ってるから。\n\n"
-        f"候補を増やすより、今回はここで決めちゃうのが良さそう！どう？"
+        f"【JAMJAM Whereからのおすすめ】\n"
+        f"今回の行き先は「{best_spot['name']}」がおすすめです。\n\n"
+        f"おすすめする理由\n"
+        f"・集合場所や移動の条件に合いやすい\n"
+        f"・予算{budget:,}円くらいで検討しやすい\n"
+        f"・{', '.join(matched_vibes)}という今回の雰囲気に合っている\n"
+        f"・{best_spot['best_for']}\n\n"
+        f"候補を増やして迷うより、今回はここで決めるのがよさそうです。"
     )
 
-    return best_spot, reason, line_text
+    return best_spot, decision_summary, reason_points, line_text
 
 
 # -----------------------------
@@ -333,7 +452,7 @@ st.subheader("今日の条件を入力")
 
 area = st.selectbox(
     "集合場所",
-    ["名古屋駅", "栄", "大須", "金山", "大学周辺", "その他"],
+    ["名古屋駅", "栄", "大須", "金山", "伏見", "名古屋港", "東山公園", "大学周辺", "その他"],
     index=0
 )
 
@@ -343,7 +462,7 @@ if area == "その他":
 
 budget = st.slider(
     "1人あたりの予算",
-    min_value=500,
+    min_value=0,
     max_value=5000,
     value=2000,
     step=500,
@@ -363,7 +482,12 @@ vibes = st.multiselect(
         "歩き回りたい",
         "長居したい",
         "非日常感",
-        "体験重視"
+        "体験重視",
+        "名古屋めし",
+        "食事重視",
+        "夜向き",
+        "昼向き",
+        "デート"
     ],
     default=["ワイワイ系", "コスパ重視"]
 )
@@ -388,10 +512,10 @@ if st.button("この場所で決める！"):
     elif not vibes:
         st.warning("遊びの雰囲気を1つ以上選んでください。")
     else:
-        with st.spinner("AIが最適な場所を吟味中..."):
+        with st.spinner("AIマッチング中..."):
             time.sleep(3)
 
-        best_spot, reason, line_text = choose_spot(
+        best_spot, decision_summary, reason_points, line_text = choose_spot(
             area=area,
             custom_area=custom_area.strip(),
             budget=budget,
@@ -399,38 +523,56 @@ if st.button("この場所で決める！"):
             stay_hours=stay_hours
         )
 
+        points_html = "".join([f"<li>{html.escape(point)}</li>" for point in reason_points])
+
         st.markdown(
             f"""
             <div class="result-card">
                 <div class="result-label">JAMJAMが出した、たった1つの答え</div>
                 <div class="result-title">{html.escape(best_spot["name"])}</div>
                 <div class="reason-box">
-                    <b>なぜここにしたのか</b><br>
-                    {html.escape(reason)}
+                    <b>JAMJAMがここに決めた理由</b><br>
+                    {html.escape(decision_summary)}
+                    <ul class="point-list">
+                        {points_html}
+                    </ul>
+                    <div class="best-for">
+                        <b>特におすすめのグループ</b><br>
+                        {html.escape(best_spot["best_for"])}
+                    </div>
                 </div>
             </div>
             """,
             unsafe_allow_html=True
         )
 
-        st.markdown("### そのままLINEで送る文章")
+        st.markdown("### 詳細を見る")
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.link_button("公式サイトを見る", best_spot["url"], use_container_width=True)
+
+        with col2:
+            st.link_button("Googleマップで見る", make_map_url(best_spot["name"]), use_container_width=True)
+
+        st.markdown("### グループに送る文章")
         st.text_area(
-            "コピーしてグループに送れます",
+            "コピーしてLINEやInstagramのグループに送れます",
             value=line_text,
-            height=170,
+            height=220,
             label_visibility="collapsed"
         )
 
-        escaped_line_text = html.escape(line_text).replace("\n", "\\n")
+        safe_line_text = json.dumps(line_text, ensure_ascii=False)
 
-        st.components.v1.html(
+        components.html(
             f"""
             <div style="margin-top: -4px;">
                 <button
-                    onclick="navigator.clipboard.writeText(`{escaped_line_text}`).then(() => {{
-                        const msg = document.getElementById('copy-message');
-                        msg.innerText = 'コピーしました！そのままLINEに送れます。';
-                    }})"
+                    onclick='navigator.clipboard.writeText({safe_line_text}).then(() => {{
+                        const msg = document.getElementById("copy-message");
+                        msg.innerText = "コピーしました！そのままグループに送れます。";
+                    }})'
                     style="
                         width: 100%;
                         border: none;
@@ -444,7 +586,7 @@ if st.button("この場所で決める！"):
                         box-shadow: 0 10px 22px rgba(20, 184, 166, 0.22);
                     "
                 >
-                    LINE用文章をコピー
+                    グループ送信用の文章をコピー
                 </button>
                 <div id="copy-message" style="
                     margin-top: 8px;
